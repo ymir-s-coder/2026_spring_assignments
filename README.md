@@ -1,55 +1,147 @@
-# 2026 Spring Assignments
+# Simple Library Manager
 
-This repository is my study folder for the 2026 spring semester.
+## 1. Project Overview
 
-I use this repository to organize and upload my university assignments, practice files, and study materials related to programming, data analysis, web scraping, FastAPI, and other course topics.
+Simple Library Manager is a small library management system built with **FastAPI**, **SQLAlchemy**, **SQLite**, and **Gradio**.
 
-Each folder contains a separate assignment or practice project.
+This project allows users to manage books, readers, and book loans through both a REST API and a visual web interface.
 
-## Purpose
+The main goal of this project is to practice backend development, database modeling, CRUD operations, and simple user interface design.
 
-The main purpose of this repository is to:
+---
 
-- keep my assignments organized
-- track my learning progress
-- manage study materials in one place
-- make my work easy to review
+## 2. Main Features
 
-## Repository Structure
-```
-2026_spring_assignments/
-├── API_26_03/
-│   └── API_26_03.ipynb
-├── Books_to_Scrape/
-│   └── Books_to_Scrape.ipynb
-├── CountVectorizer/
-│   └── CountVectorizer.ipynb
-├── EDA_blood_transfusion_service_center/
-│   └── EDA_blood_transfusion_service_center.ipynb
-├── faker_tom_and_jarry/
-│   └── faker_tom_and_jarry.ipynb
-├── quotes_toscrape/
-│   └── quotes_toscrape.ipynb
-├── rocket_launch/
-│   └── rocket_launch.ipynb
-├── webtoon/
-│   └── webtoon.ipynb
-├── CSV data/
-│   ├── create.py
-│   ├── customers.csv
-│   ├── customers.db
-│   ├── delete.py
-│   ├── full_ver_main.py
-│   ├── init.py
-│   ├── main.py
-│   ├── read.py
-│   └── update.py
-└── fast_api/
-    ├── fastapi.py
-    ├── path_parameters.py
-    ├── path_parameters_&_numeric_validations.py
-    ├── query_parameters.py
-    ├── query_parameter_models.py
-    ├── README.md
-    └── request_body.py
-```
+### Book Management
+
+- Add new books
+- View all books
+- Update book information
+- Delete books
+- Check whether a book is available or loaned
+
+### Reader Management
+
+- Add new readers
+- View all readers
+- Update reader information
+- Delete readers
+
+### Loan Management
+
+- Create a book loan
+- Return a book
+- View all loan records
+- View active loans
+- View overdue loans
+
+### Dashboard
+
+- Total books
+- Available books
+- Loaned books
+- Total readers
+- Total loan records
+- Overdue loan count
+
+---
+
+## 3. Technologies Used
+
+| Part | Technology |
+|---|---|
+| Backend API | FastAPI |
+| Database ORM | SQLAlchemy |
+| Database | SQLite |
+| Data Validation | Pydantic |
+| UI | Gradio |
+| Language | Python |
+
+---
+
+## 4. Project Structure
+
+```text
+Library_API/
+├── database.py
+├── models.py
+├── crud.py
+├── main.py
+├── gradio_app.py
+├── requirements.txt
+└── README.md```
+
+---
+
+# Simple Library Manager
+
+## 1. Project Overview
+
+Simple Library Manager is a small library management system built with **FastAPI**, **SQLAlchemy**, **SQLite**, and **Gradio**.
+
+This project allows users to manage books, readers, and book loans through both a REST API and a visual web interface.
+
+The main goal of this project is to practice backend development, database modeling, CRUD operations, and simple user interface design.
+
+---
+
+## 2. Main Features
+
+### Book Management
+
+- Add new books
+- View all books
+- Update book information
+- Delete books
+- Check whether a book is available or loaned
+
+### Reader Management
+
+- Add new readers
+- View all readers
+- Update reader information
+- Delete readers
+
+### Loan Management
+
+- Create a book loan
+- Return a book
+- View all loan records
+- View active loans
+- View overdue loans
+
+### Dashboard
+
+- Total books
+- Available books
+- Loaned books
+- Total readers
+- Total loan records
+- Overdue loan count
+
+---
+
+## 3. Technologies Used
+
+| Part | Technology |
+|---|---|
+| Backend API | FastAPI |
+| Database ORM | SQLAlchemy |
+| Database | SQLite |
+| Data Validation | Pydantic |
+| UI | Gradio |
+| Language | Python |
+
+---
+
+## 4. Project Structure
+
+```text
+Library_API/
+├── database.py
+├── models.py
+├── crud.py
+├── main.py
+├── gradio_app.py
+├── requirements.txt
+└── README.md```
