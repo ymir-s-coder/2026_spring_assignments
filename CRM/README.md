@@ -35,3 +35,41 @@ https://diligence-rotting-composer.ngrok-free.dev
 
 ```text
 Customer Data → EDA → CRM Insight → Prediction → Marketing Action
+## Saved Machine Learning Models
+
+This version separates model training from the Gradio application.
+
+### 1. Train and save the models
+
+Run this command inside the `CRM` folder:
+
+```bash
+python train_model.py
+```
+
+This creates:
+
+```text
+models/classification_model.pkl
+models/regression_model.pkl
+```
+
+### 2. Start the Gradio app
+
+```bash
+python app.py
+```
+
+### Why save models?
+
+The saved `.pkl` files contain already trained Random Forest models.  
+This means the application can load ready models and make predictions without training them again every time.
+
+### Files
+
+```text
+train_model.py                    trains and saves the ML models
+models/classification_model.pkl    saved classification model
+models/regression_model.pkl        saved regression model
+app.py                            loads saved models and uses them in Gradio
+```

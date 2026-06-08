@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import gradio as gr
+import joblib
+
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -17,6 +19,9 @@ from sklearn.metrics import (
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, "clean_sales_data.csv")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+CLASSIFICATION_MODEL_PATH = os.path.join(MODELS_DIR, "classification_model.pkl")
+REGRESSION_MODEL_PATH = os.path.join(MODELS_DIR, "regression_model.pkl")
 
 # ------------------------------------------------------------
 # Data loading
@@ -400,31 +405,63 @@ def prepare_model_data(max_rows=50000):
     return model_df, X
 
 
+def _load_model_artifact(path):
+    """Load a trained model artifact created by train_model.py."""
+    if os.path.exists(path):
+        return joblib.load(path)
+    return None
+
+
+def _feature_warning(artifact):
+    """Check whether saved model features match the current application features."""
+    saved_features = artifact.get("feature_cols", []) if isinstance(artifact, dict) else []
+    if list(saved_features) != list(FEATURE_COLS):
+        return (
+            "<p><b>Warning:</b> saved model features are different from current data columns. "
+            "Run <code>python train_model.py</code> again.</p>"
+        )
+    return ""
+
+
 def run_classification():
-    model_df, X = prepare_model_data()
-    median_sales = model_df["Sales Amount"].median()
-    y = (model_df["Sales Amount"] >= median_sales).astype(int)
+    artifact = _load_model_artifact(CLASSIFICATION_MODEL_PATH)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
+    if artifact is None:
+        model_df, X = prepare_model_data()
+        median_sales = model_df["Sales Amount"].median()
+        y = (model_df["Sales Amount"] >= median_sales).astype(int)
 
-    model = RandomForestClassifier(n_estimators=80, max_depth=12, random_state=42, n_jobs=-1)
-    model.fit(X_train, y_train)
-    pred = model.predict(X_test)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
+        )
 
-    accuracy = accuracy_score(y_test, pred)
-    cm = confusion_matrix(y_test, pred)
-    report = classification_report(y_test, pred, target_names=["Low Value", "High Value"], output_dict=True)
+        model = RandomForestClassifier(n_estimators=80, max_depth=12, random_state=42, n_jobs=-1)
+        model.fit(X_train, y_train)
+        pred = model.predict(X_test)
+
+        accuracy = accuracy_score(y_test, pred)
+        cm = confusion_matrix(y_test, pred)
+        report = classification_report(y_test, pred, target_names=["Low Value", "High Value"], output_dict=True)
+        importance = pd.DataFrame({"Feature": FEATURE_COLS, "Importance": model.feature_importances_}).sort_values("Importance", ascending=False)
+        model_source = "Trained inside app.py"
+        warning = "<p><b>Note:</b> saved model file was not found. The app trained the model now. For the professional version, run <code>python train_model.py</code>.</p>"
+    else:
+        model = artifact["model"]
+        median_sales = artifact["median_sales"]
+        accuracy = artifact["accuracy"]
+        cm = artifact["confusion_matrix"]
+        report = artifact["classification_report"]
+        importance = artifact["importance"]
+        model_source = "Loaded from models/classification_model.pkl"
+        warning = _feature_warning(artifact)
 
     metrics = pd.DataFrame([
         {"Metric": "Median Sales Threshold", "Value": money(median_sales)},
         {"Metric": "Accuracy", "Value": f"{accuracy:.4f}"},
         {"Metric": "Low Value F1", "Value": f"{report['Low Value']['f1-score']:.4f}"},
         {"Metric": "High Value F1", "Value": f"{report['High Value']['f1-score']:.4f}"},
+        {"Metric": "Model Source", "Value": model_source},
     ])
-
-    importance = pd.DataFrame({"Feature": FEATURE_COLS, "Importance": model.feature_importances_}).sort_values("Importance", ascending=False)
 
     fig_cm, ax = plt.subplots(figsize=(6, 5), facecolor="white")
     im = ax.imshow(cm, cmap="Blues")
@@ -449,6 +486,7 @@ def run_classification():
 <div class="model-summary">
   <h3>High-Value Purchase Classification</h3>
   <p>The dataset contains completed sales transactions, so a real Buy / No Buy target is not available. The model predicts whether a purchase is <b>High Value</b> or <b>Low Value</b> based on the median sales amount.</p>
+  {warning}
   <div class="metric-row">
     <div><span>Accuracy</span><strong>{accuracy:.3f}</strong></div>
     <div><span>Threshold</span><strong>{money(median_sales)}</strong></div>
@@ -460,26 +498,40 @@ def run_classification():
 
 
 def run_regression():
-    model_df, X = prepare_model_data()
-    y = model_df["Sales Amount"]
+    artifact = _load_model_artifact(REGRESSION_MODEL_PATH)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    if artifact is None:
+        model_df, X = prepare_model_data()
+        y = model_df["Sales Amount"]
 
-    model = RandomForestRegressor(n_estimators=80, max_depth=14, random_state=42, n_jobs=-1)
-    model.fit(X_train, y_train)
-    pred = model.predict(X_test)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    mae = mean_absolute_error(y_test, pred)
-    rmse = np.sqrt(mean_squared_error(y_test, pred))
-    r2 = r2_score(y_test, pred)
+        model = RandomForestRegressor(n_estimators=80, max_depth=14, random_state=42, n_jobs=-1)
+        model.fit(X_train, y_train)
+        pred = model.predict(X_test)
+
+        mae = mean_absolute_error(y_test, pred)
+        rmse = np.sqrt(mean_squared_error(y_test, pred))
+        r2 = r2_score(y_test, pred)
+        importance = pd.DataFrame({"Feature": FEATURE_COLS, "Importance": model.feature_importances_}).sort_values("Importance", ascending=False)
+        model_source = "Trained inside app.py"
+        warning = "<p><b>Note:</b> saved model file was not found. The app trained the model now. For the professional version, run <code>python train_model.py</code>.</p>"
+    else:
+        model = artifact["model"]
+        y_test = artifact["y_test"]
+        pred = artifact["predictions"]
+        mae = artifact["mae"]
+        rmse = artifact["rmse"]
+        r2 = artifact["r2"]
+        importance = artifact["importance"]
+        model_source = "Loaded from models/regression_model.pkl"
+        warning = _feature_warning(artifact)
 
     metrics = pd.DataFrame({
-        "Metric": ["MAE", "RMSE", "R²"],
-        "Value": [money(mae), money(rmse), f"{r2:.4f}"],
-        "Meaning": ["Average prediction error", "Large-error-sensitive prediction error", "Explained variance of sales amount"],
+        "Metric": ["MAE", "RMSE", "R²", "Model Source"],
+        "Value": [money(mae), money(rmse), f"{r2:.4f}", model_source],
+        "Meaning": ["Average prediction error", "Large-error-sensitive prediction error", "Explained variance of sales amount", "Where the model came from"],
     })
-
-    importance = pd.DataFrame({"Feature": FEATURE_COLS, "Importance": model.feature_importances_}).sort_values("Importance", ascending=False)
 
     fig_pred, ax = plt.subplots(figsize=(7, 6), facecolor="white")
     ax.scatter(y_test, pred, alpha=0.35, color="#0f766e")
@@ -499,6 +551,7 @@ def run_regression():
 <div class="model-summary">
   <h3>Sales Amount Regression</h3>
   <p>The regression model predicts <b>Sales Amount</b> using customer, product, territory, quantity, price, discount, year, and month features.</p>
+  {warning}
   <div class="metric-row">
     <div><span>R² Score</span><strong>{r2:.3f}</strong></div>
     <div><span>MAE</span><strong>{money(mae)}</strong></div>
@@ -510,11 +563,17 @@ def run_regression():
 
 
 def predict_custom_input(customer_key, product_key, territory_key, order_quantity, unit_price, discount_pct, year, month):
-    model_df, X = prepare_model_data()
-    y = model_df["Sales Amount"]
+    artifact = _load_model_artifact(REGRESSION_MODEL_PATH)
 
-    model = RandomForestRegressor(n_estimators=80, max_depth=14, random_state=42, n_jobs=-1)
-    model.fit(X, y)
+    if artifact is None:
+        model_df, X = prepare_model_data()
+        y = model_df["Sales Amount"]
+        model = RandomForestRegressor(n_estimators=80, max_depth=14, random_state=42, n_jobs=-1)
+        model.fit(X, y)
+        source = "temporary model trained inside app.py"
+    else:
+        model = artifact["model"]
+        source = "saved model from models/regression_model.pkl"
 
     input_df = pd.DataFrame([{
         "CustomerKey": int(customer_key),
@@ -530,7 +589,7 @@ def predict_custom_input(customer_key, product_key, territory_key, order_quantit
     input_df = input_df[FEATURE_COLS]
     predicted_sales = model.predict(input_df)[0]
 
-    return f"Predicted Sales Amount: {money(predicted_sales)}"
+    return f"Predicted Sales Amount: {money(predicted_sales)} | Model source: {source}"
 
 
 # ------------------------------------------------------------
